@@ -11,6 +11,40 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var core_1 = require('@angular/core');
 var forms_1 = require('@angular/forms');
 var customer_1 = require('./customer');
+function ratingRange(c) {
+    if (c.value !== undefined && (isNaN(c.value) || c.value < 1 || c.value > 5)) {
+        return { 'range': true };
+    }
+    return null;
+}
+function ratingRangeWithParams(min, max) {
+    return function (c) {
+        if (c.value !== undefined && (isNaN(c.value) || c.value < min || c.value > max)) {
+            return { 'range': true };
+        }
+        return null;
+    };
+}
+function badNames(names) {
+    return function (c) {
+        var hasBadName = names.find(function (name) { return c.value.toLowerCase() === name.toLowerCase(); });
+        if (c.value !== undefined && hasBadName) {
+            return { 'name': true };
+        }
+        return null;
+    };
+}
+function emailMatcher(c) {
+    var emailControl = c.get('email');
+    var confirmControl = c.get('confirmEmail');
+    if (emailControl.pristine || confirmControl.pristine) {
+        return null;
+    }
+    if (emailControl.value === confirmControl.value) {
+        return null;
+    }
+    return { 'match': true };
+}
 var CustomerComponent = (function () {
     function CustomerComponent(FormBuilder) {
         this.FormBuilder = FormBuilder;
@@ -18,11 +52,15 @@ var CustomerComponent = (function () {
     }
     CustomerComponent.prototype.ngOnInit = function () {
         this.customerForm = this.FormBuilder.group({
-            firstName: ['', [forms_1.Validators.required, forms_1.Validators.minLength(3)]],
+            firstName: ['', [forms_1.Validators.required, forms_1.Validators.minLength(3), badNames(['haven', 'judy'])]],
             lastName: ['', [forms_1.Validators.required, forms_1.Validators.maxLength(3)]],
-            email: ['', [forms_1.Validators.required, forms_1.Validators.pattern('[a-z0-9._%+-]+@[a-z0-9.-]+')]],
+            emailGroup: this.FormBuilder.group({
+                email: ['', [forms_1.Validators.required, forms_1.Validators.pattern('[a-z0-9._%+-]+@[a-z0-9.-]+')]],
+                confirmEmail: ['', [forms_1.Validators.required]]
+            }, { validator: emailMatcher }),
             phone: [''],
             notification: ['email'],
+            rating: ['', [forms_1.Validators.required, ratingRangeWithParams(1, 3)]],
             sendCatalog: ['']
         });
     };
